@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Equipamentos</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>CADASTRO DE EQUIPAMENTOS</h1>
+        <form id="equipForm" enctype="multipart/form-data" method="POST" action="cadastro.php">
+            <div class="form-row">
+                <label for="nome">Equipamento:</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+            <div class="form-row">
+                <label for="tag">TAG:</label>
+                <input type="text" id="tag" name="tag" required>
+                <span id="tag-feedback" class="feedback-message"></span>
+            </div>
+            <div class="form-row">
+                <label for="setor">Setor:</label>
+                <input type="text" id="setor" name="setor" required>
+            </div>
+            <div class="form-row">
+                <label for="descricao">Descrição:</label>
+                <input type="text" id="descricao" name="descricao">
+            </div>
+            <div class="form-row">
+                <label for="manutencao_preventiva_intervalo">Intervalo Preventiva (dias):</label>
+                <input type="number" id="manutencao_preventiva_intervalo" name="manutencao_preventiva_intervalo"
+                    placeholder="Ex: 30, 90, 180">
+            </div>
+            <div class="form-row">
+                <label for="ultima_manutencao_preventiva">Última Preventiva:</label>
+                <input type="date" id="ultima_manutencao_preventiva" name="ultima_manutencao_preventiva">
+            </div>
+            <div class="form-row form-row-photo">
+
+                <label for="foto">Imagem:</label>
+                <input type="file" id="foto" name="foto" accept="image/*">
+                <img id="preview" class="equip-photo-preview" style="display:none;" />
+
+            </div>
+            <div class="form-buttons">
+                <button type="submit" class="btn submit-btn btn-cadastro">Cadastrar</button>
+                <a href="listar_equipamentos.php" class="btn submit-btn btn-maintenance" style="text-decoration: none;">
+                    Manutenção</a>
+                <div class="info-bar" id="info-bar" style="flex-grow: 1; text-align: right;"></div>
+            </div>
+        </form>
+    </div>
+    <script>
+        // Preview da foto
+        document.getElementById('foto').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (evt) {
+                    const img = document.getElementById('preview');
+                    img.src = evt.target.result;
+                    img.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Submete o formulário via AJAX para permanecer na mesma página
+        document.getElementById('equipForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch('cadastro.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json()) // Espera uma resposta JSON
+                .then(data => {
+                    alert(data.message); // Exibe a mensagem de sucesso ou erro
+                    if (data.success) {
+                        // Limpa o formulário após o sucesso
+                        document.getElementById('equipForm').reset();
+                        document.getElementById('preview').style.display = 'none';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Erro:', error);
+                    alert('Ocorreu um erro de comunicação ao tentar cadastrar o equipamento.');
+                });
+        });
+
+        // Validação da TAG em tempo real
+        document.getElementById('tag').addEventListener('blur', function (e) {
+            const tag = e.target.value.trim();
+            const feedbackEl = document.getElementById('tag-feedback');
+            const submitBtn = document.querySelector('.btn-cadastro');
+
+            if (tag.length === 0) {
+                feedbackEl.textContent = '';
+                return;
+            }
+
+            fetch(`verificar_tag.php?tag=${encodeURIComponent(tag)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        feedbackEl.textContent = 'Esta TAG já está em uso.';
+                        feedbackEl.className = 'feedback-message error';
+                        submitBtn.disabled = true; // Desabilita o botão de cadastrar
+                    } else {
+                        feedbackEl.textContent = 'TAG disponível!';
+                        feedbackEl.className = 'feedback-message success';
+                        submitBtn.disabled = false; // Habilita o botão
+                    }
+                }).catch(error => console.error('Erro ao verificar TAG:', error));
+        });
+
+    </script>
+    <script src="main.js"></script>
+
+</body>
+
+</html>
